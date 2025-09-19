@@ -74,6 +74,10 @@ Unifying_AI_Tutor_Evaluation_PaperReplicate/
 
 4. **Verify installation**:
    ```bash
+   # Test basic functionality
+   python -c "import torch, transformers, helper; print('✓ All dependencies installed successfully')"
+   
+   # Check CUDA availability (optional)
    python -c "import torch; print(f'PyTorch version: {torch.__version__}'); print(f'CUDA available: {torch.cuda.is_available()}')"
    ```
 

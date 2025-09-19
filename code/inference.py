@@ -10,38 +10,30 @@ model_ids = {
     "meta-llama/Llama-3.1-8B-Instruct": "llama", 
     "mistralai/Mistral-7B-Instruct-v0.1": "mistral"
 }
+dataset_file = "../data/MRBench/MRBench_V1.json"
+output_file_format = "../data/result_{}.json"
+bridge_prompt_path = "../data/prompt/prompt_Bridge.txt"
+mathdial_prompt_path = "../data/prompt/prompt_MathDial.txt"
 
-# Dataset and output file configuration
-dataset_file = "MRBench_V1.json"
-output_file = "result_MRBench_V1.json"
+def load_data():
+    # Dataset and output file configuration
+    dataset_path = os.path.join(dataset_file)
+    with open(dataset_path, "r", encoding="utf-8") as fp:
+        json_data = json.load(fp)
+    print(f"Loaded {len(json_data)} samples from {dataset_file}")
+    return json_data
 
-# Set up directory paths
-current_dir = os.path.dirname(__file__)
-data_dir = os.path.join(current_dir, "..", "data")
-data_dir = os.path.abspath(data_dir)
+def load_prompt():
+    with open(bridge_prompt_path, "r", encoding="utf-8") as f:
+        BridgePrompt = f.read()
+    with open(mathdial_prompt_path, "r", encoding="utf-8") as f:
+        MathDialPrompt = f.read()
+    print(f"Bridge prompt template loaded from: {bridge_prompt_path}")
+    print(f"MathDial prompt template loaded from: {mathdial_prompt_path}")
+    return BridgePrompt, MathDialPrompt
 
-# Load prompt templates
-MathDialPrompt = ""
-BridgePrompt = ""
-
-# Read Bridge prompt template
-bridge_prompt_path = os.path.join(data_dir, "prompt", "prompt_Bridge.txt")
-with open(bridge_prompt_path, "r", encoding="utf-8") as f:
-    BridgePrompt = f.read()
-
-# Read MathDial prompt template  
-mathdial_prompt_path = os.path.join(data_dir, "prompt", "prompt_MathDial.txt")
-with open(mathdial_prompt_path, "r", encoding="utf-8") as f:
-    MathDialPrompt = f.read()
-
-# Load dataset
-dataset_path = os.path.join(data_dir, "MRBench", dataset_file)
-with open(dataset_path, "r", encoding="utf-8") as fp:
-    json_data = json.load(fp)
-
-print(f"Loaded {len(json_data)} samples from {dataset_path}")
-print(f"Bridge prompt template loaded from: {bridge_prompt_path}")
-print(f"MathDial prompt template loaded from: {mathdial_prompt_path}")
+json_data = load_data()
+BridgePrompt, MathDialPrompt = load_prompt()
 
 def _take_text(generation_result):
     """
@@ -57,12 +49,11 @@ def _take_text(generation_result):
         return generation_result[0]['generated_text']
     return generation_result['generated_text']
 
-# Main inference loop for each model
-for model_id, model_name in model_ids.items():
+def inference(json_data, BridgePrompt, MathDialPrompt, model_id, model_name, org):  
     print(f"\n=== Processing model: {model_id} ===")
     
     final_result = []
-    org = True  # Original formatting flag (kept for compatibility)
+    org = True
     
     # Load tokenizer and set padding configuration
     print("Loading tokenizer...")
@@ -75,7 +66,7 @@ for model_id, model_name in model_ids.items():
     print("Loading model...")
     model = AutoModelForCausalLM.from_pretrained(
         model_id,
-        torch_dtype=torch.float16,  # Use torch_dtype instead of dtype
+        dtype=torch.float16,  # Use torch_dtype instead of dtype
         device_map="auto",
         trust_remote_code=True  # Add for some models that require it
     ).eval()
@@ -90,7 +81,7 @@ for model_id, model_name in model_ids.items():
     # Configure generation parameters
     gen_cfg = GenerationConfig(
         do_sample=False,  # Use greedy decoding for consistency
-        max_new_tokens=200,  # Maximum number of new tokens to generate
+        max_new_tokens=1024,  # Maximum number of new tokens to generate
         eos_token_id=tokenizer.eos_token_id,
         pad_token_id=tokenizer.pad_token_id,
         repetition_penalty=1.1,  # Reduce repetition
@@ -112,7 +103,7 @@ for model_id, model_name in model_ids.items():
         prompt_list.append(prompt)
     
     # Process in batches for memory efficiency
-    batch_size = 16  # Reduced batch size for better memory management
+    batch_size = 4  # Reduced batch size for better memory management
     print(f"Processing {len(prompt_list)} samples in batches of {batch_size}...")
     
     for start in tqdm(range(0, len(prompt_list), batch_size), desc=f"Generating with {model_name}", unit="batch"):
@@ -127,18 +118,18 @@ for model_id, model_name in model_ids.items():
             generation_config=gen_cfg,
             return_full_text=False,  # Only return generated part
             truncation=True,
-            max_length=1024  # Total max length including input
+            max_length=2048  # Total max length including input
         )
 
         # Process each generation result
         for x, g in zip(batch_idxs, generations):
             cur_data = json_data[x]
             temp = {}
-            
+            original_response = _take_text(g)
             # Clean and format the generated response
-            result = helper.safe_cut_at_first_heading(_take_text(g))
-            
+            result = helper.safe_cut_at_first_heading(original_response)
             # Store results with original data fields
+            temp['original_response'] = original_response
             temp["result"] = result
             temp["Data"] = cur_data["Data"]
             temp["conversation_history"] = cur_data["conversation_history"]
@@ -153,7 +144,7 @@ for model_id, model_name in model_ids.items():
                 print(f"Processed {len(final_result)} samples...")
     
     # Save results to file
-    output_path = os.path.join(data_dir, f"{model_name}_{output_file}")
+    output_path = output_file_format.format(model_name)
     print(f"Saving {len(final_result)} results to {output_path}")
     
     with open(output_path, "w", encoding="utf-8") as f:
@@ -166,4 +157,7 @@ for model_id, model_name in model_ids.items():
     del generator
     torch.cuda.empty_cache()
 
-print("\n=== All models processed successfully! ===")
+
+if __name__ == "__main__":
+    for model_id, model_name in model_ids.items():
+        inference(json_data, BridgePrompt, MathDialPrompt, model_id, model_name, org)
