@@ -8,7 +8,8 @@ from argparse import ArgumentParser
 
 # Model configurations: model_id -> short_name mapping
 model_ids_map = {
-    "llama": "meta-llama/Llama-3.1-8B-Instruct",
+    # "llama": "meta-llama/Llama-3.1-8B-Instruct",
+    "llame": "/u/xfeng4/.cache/modelscope/hub/models/LLM-Research/Meta-Llama-3.1-8B-Instruct",
     "mistral": "mistralai/Mistral-7B-Instruct-v0.1",
 }
 def load_data(args):
@@ -159,10 +160,14 @@ if __name__ == "__main__":
     parser.add_argument("--do_sample", type=bool, default=False)
     parser.add_argument("--org", type=bool, default=True)
     parser.add_argument("--dataset_file", type=str, default="../data/MRBench/MRBench_V1.json")
+    parser.add_argument("--bridge_prompt_path", type=str, default="../data/prompt/prompt_Bridge.txt")
+    parser.add_argument("--mathdial_prompt_path", type=str, default="../data/prompt/prompt_MathDial.txt")
 
     args = parser.parse_args()
     args.output_file = os.path.join(os.path.dirname(args.dataset_file), args.model_name + "_result.json")
-
+    print("*"*100)
+    print(args)
+    print("*"*100)
     json_data = load_data(args)
     BridgePrompt, MathDialPrompt = load_prompt(args)
     inference(args, json_data, BridgePrompt, MathDialPrompt)
