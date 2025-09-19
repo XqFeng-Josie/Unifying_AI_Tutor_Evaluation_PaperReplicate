@@ -1,0 +1,38 @@
+# Core dependencies for AI Tutor Evaluation Inference
+torch>=2.0.0
+transformers>=4.30.0
+tokenizers>=0.13.0
+
+# Data processing and utilities
+numpy>=1.21.0
+pandas>=1.3.0
+tqdm>=4.64.0
+
+# Jupyter notebook support (for data_analysis.ipynb)
+jupyter>=1.0.0
+ipykernel>=6.0.0
+notebook>=6.4.0
+
+# Data visualization (commonly used in analysis notebooks)
+matplotlib>=3.5.0
+seaborn>=0.11.0
+plotly>=5.0.0
+
+# Additional ML utilities
+scikit-learn>=1.0.0
+scipy>=1.7.0
+
+# CUDA support (optional, for GPU acceleration)
+# Uncomment the line below if you have CUDA-compatible GPU
+# torch-audio>=2.0.0
+
+# Development and testing utilities
+pytest>=7.0.0
+black>=22.0.0
+flake8>=4.0.0
+
+# Memory optimization
+accelerate>=0.20.0
+
+# HuggingFace Hub integration
+huggingface-hub>=0.15.0
