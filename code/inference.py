@@ -3,8 +3,8 @@ import json
 import torch
 from tqdm import tqdm
 from transformers import AutoTokenizer, AutoModelForCausalLM, pipeline, GenerationConfig
-import helper
 from argparse import ArgumentParser
+from prompt import prompt_Bridge, prompt_MathDial
 
 # Model configurations: model_id -> short_name mapping
 model_ids_map = {
@@ -19,15 +19,6 @@ def load_data(args):
         json_data = json.load(fp)
     print(f"Loaded {len(json_data)} samples from {args.dataset_file}")
     return json_data
-
-def load_prompt(args):
-    with open(args.bridge_prompt_path, "r", encoding="utf-8") as f:
-        BridgePrompt = f.read()
-    with open(args.mathdial_prompt_path, "r", encoding="utf-8") as f:
-        MathDialPrompt = f.read()
-    print(f"Bridge prompt template loaded from: {args.bridge_prompt_path}")
-    print(f"MathDial prompt template loaded from: {args.mathdial_prompt_path}")
-    return BridgePrompt, MathDialPrompt
 
 def _take_text(generation_result):
     """
@@ -44,7 +35,7 @@ def _take_text(generation_result):
     return generation_result['generated_text']
 
 def inference(args, json_data, BridgePrompt, MathDialPrompt):  
-    print(f"\n=== Processing model: {model_id} ===")
+    print(f"\n=== Processing model: {args.model_name} ===")
     model_path = model_ids_map[args.model_name]
     
     final_result = []    # Load tokenizer and set padding configuration
@@ -87,9 +78,11 @@ def inference(args, json_data, BridgePrompt, MathDialPrompt):
         cur_data = json_data[x]
         # Select appropriate prompt based on data source
         if cur_data['Data'] == "MathDial":
-            prompt = helper.MathDial_Prompt(MathDialPrompt, cur_data)
+            prompt = prompt_MathDial.gen_prompt(cur_data)
+        elif cur_data['Data'] == "Bridge":
+            prompt = prompt_Bridge.gen_prompt(cur_data)
         else:
-            prompt = helper.Bridge_Prompt(BridgePrompt, cur_data)
+            raise ValueError(f"Invalid data source: {cur_data['Data']}")
         
         idx_list.append(x)
         prompt_list.append(prompt)
@@ -117,11 +110,8 @@ def inference(args, json_data, BridgePrompt, MathDialPrompt):
         for x, g in zip(batch_idxs, generations):
             cur_data = json_data[x]
             temp = {}
-            original_response = _take_text(g)
-            # Clean and format the generated response
-            result = helper.safe_cut_at_first_heading(original_response)
+            result = _take_text(g)
             # Store results with original data fields
-            temp['original_response'] = original_response
             temp["result"] = result
             temp["Data"] = cur_data["Data"]
             temp["conversation_history"] = cur_data["conversation_history"]
