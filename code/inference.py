@@ -4,36 +4,29 @@ import torch
 from tqdm import tqdm
 from transformers import AutoTokenizer, AutoModelForCausalLM, pipeline, GenerationConfig
 import helper
+from argparse import ArgumentParser
 
 # Model configurations: model_id -> short_name mapping
-model_ids = {
-    "meta-llama/Llama-3.1-8B-Instruct": "llama", 
-    "mistralai/Mistral-7B-Instruct-v0.1": "mistral"
+model_ids_map = {
+    "llama": "meta-llama/Llama-3.1-8B-Instruct",
+    "mistral": "mistralai/Mistral-7B-Instruct-v0.1",
 }
-dataset_file = "../data/MRBench/MRBench_V1.json"
-output_file_format = "../data/result_{}.json"
-bridge_prompt_path = "../data/prompt/prompt_Bridge.txt"
-mathdial_prompt_path = "../data/prompt/prompt_MathDial.txt"
-
-def load_data():
+def load_data(args):
     # Dataset and output file configuration
-    dataset_path = os.path.join(dataset_file)
+    dataset_path = os.path.join(args.dataset_file)
     with open(dataset_path, "r", encoding="utf-8") as fp:
         json_data = json.load(fp)
-    print(f"Loaded {len(json_data)} samples from {dataset_file}")
+    print(f"Loaded {len(json_data)} samples from {args.dataset_file}")
     return json_data
 
-def load_prompt():
-    with open(bridge_prompt_path, "r", encoding="utf-8") as f:
+def load_prompt(args):
+    with open(args.bridge_prompt_path, "r", encoding="utf-8") as f:
         BridgePrompt = f.read()
-    with open(mathdial_prompt_path, "r", encoding="utf-8") as f:
+    with open(args.mathdial_prompt_path, "r", encoding="utf-8") as f:
         MathDialPrompt = f.read()
-    print(f"Bridge prompt template loaded from: {bridge_prompt_path}")
-    print(f"MathDial prompt template loaded from: {mathdial_prompt_path}")
+    print(f"Bridge prompt template loaded from: {args.bridge_prompt_path}")
+    print(f"MathDial prompt template loaded from: {args.mathdial_prompt_path}")
     return BridgePrompt, MathDialPrompt
-
-json_data = load_data()
-BridgePrompt, MathDialPrompt = load_prompt()
 
 def _take_text(generation_result):
     """
@@ -49,15 +42,13 @@ def _take_text(generation_result):
         return generation_result[0]['generated_text']
     return generation_result['generated_text']
 
-def inference(json_data, BridgePrompt, MathDialPrompt, model_id, model_name, org):  
+def inference(args, json_data, BridgePrompt, MathDialPrompt):  
     print(f"\n=== Processing model: {model_id} ===")
+    model_path = model_ids_map[args.model_name]
     
-    final_result = []
-    org = True
-    
-    # Load tokenizer and set padding configuration
+    final_result = []    # Load tokenizer and set padding configuration
     print("Loading tokenizer...")
-    tokenizer = AutoTokenizer.from_pretrained(model_id) 
+    tokenizer = AutoTokenizer.from_pretrained(model_path) 
     if tokenizer.pad_token_id is None:
         tokenizer.pad_token_id = tokenizer.eos_token_id
     tokenizer.padding_side = "left"
@@ -65,7 +56,7 @@ def inference(json_data, BridgePrompt, MathDialPrompt, model_id, model_name, org
     # Load model with optimized settings
     print("Loading model...")
     model = AutoModelForCausalLM.from_pretrained(
-        model_id,
+        model_path,
         dtype=torch.float16,  # Use torch_dtype instead of dtype
         device_map="auto",
         trust_remote_code=True  # Add for some models that require it
@@ -81,11 +72,11 @@ def inference(json_data, BridgePrompt, MathDialPrompt, model_id, model_name, org
     # Configure generation parameters
     gen_cfg = GenerationConfig(
         do_sample=False,  # Use greedy decoding for consistency
-        max_new_tokens=1024,  # Maximum number of new tokens to generate
+        max_new_tokens=args.max_new_tokens,  # Maximum number of new tokens to generate
         eos_token_id=tokenizer.eos_token_id,
         pad_token_id=tokenizer.pad_token_id,
-        repetition_penalty=1.1,  # Reduce repetition
-        temperature=0.1  # Low temperature for more focused responses
+        repetition_penalty=args.repetition_penalty,  # Reduce repetition
+        temperature=args.temperature  # Low temperature for more focused responses
     )
     
     # Prepare prompts for all data samples
@@ -95,18 +86,18 @@ def inference(json_data, BridgePrompt, MathDialPrompt, model_id, model_name, org
         cur_data = json_data[x]
         # Select appropriate prompt based on data source
         if cur_data['Data'] == "MathDial":
-            prompt = helper.MathDial_Prompt(MathDialPrompt, cur_data, org)
+            prompt = helper.MathDial_Prompt(MathDialPrompt, cur_data)
         else:
-            prompt = helper.Bridge_Prompt(BridgePrompt, cur_data, org)
+            prompt = helper.Bridge_Prompt(BridgePrompt, cur_data)
         
         idx_list.append(x)
         prompt_list.append(prompt)
     
     # Process in batches for memory efficiency
-    batch_size = 4  # Reduced batch size for better memory management
+    batch_size = args.batch_size  # Reduced batch size for better memory management
     print(f"Processing {len(prompt_list)} samples in batches of {batch_size}...")
     
-    for start in tqdm(range(0, len(prompt_list), batch_size), desc=f"Generating with {model_name}", unit="batch"):
+    for start in tqdm(range(0, len(prompt_list), batch_size), desc=f"Generating with {args.model_name}", unit="batch"):
         end = min(start + batch_size, len(prompt_list))
         batch_prompts = prompt_list[start:end]
         batch_idxs = idx_list[start:end]
@@ -118,7 +109,7 @@ def inference(json_data, BridgePrompt, MathDialPrompt, model_id, model_name, org
             generation_config=gen_cfg,
             return_full_text=False,  # Only return generated part
             truncation=True,
-            max_length=2048  # Total max length including input
+            max_length=args.max_length  # Total max length including input
         )
 
         # Process each generation result
@@ -144,13 +135,12 @@ def inference(json_data, BridgePrompt, MathDialPrompt, model_id, model_name, org
                 print(f"Processed {len(final_result)} samples...")
     
     # Save results to file
-    output_path = output_file_format.format(model_name)
-    print(f"Saving {len(final_result)} results to {output_path}")
+    print(f"Saving {len(final_result)} results to {args.output_file}")
     
-    with open(output_path, "w", encoding="utf-8") as f:
+    with open(args.output_file, "w", encoding="utf-8") as f:
         json.dump(final_result, f, ensure_ascii=False, indent=2)
     
-    print(f"Completed processing {model_id}. Results saved to {output_path}")
+    print(f"Completed processing {args.model_name}. Results saved to {args.output_file}")
     
     # Clean up GPU memory
     del model
@@ -159,5 +149,20 @@ def inference(json_data, BridgePrompt, MathDialPrompt, model_id, model_name, org
 
 
 if __name__ == "__main__":
-    for model_id, model_name in model_ids.items():
-        inference(json_data, BridgePrompt, MathDialPrompt, model_id, model_name, org)
+    parser = ArgumentParser()
+    parser.add_argument("--model_name", type=str, default="llama")
+    parser.add_argument("--batch_size", type=int, default=4)
+    parser.add_argument("--max_new_tokens", type=int, default=1024)
+    parser.add_argument("--max_length", type=int, default=2048)
+    parser.add_argument("--temperature", type=float, default=0.1)
+    parser.add_argument("--repetition_penalty", type=float, default=1.1)
+    parser.add_argument("--do_sample", type=bool, default=False)
+    parser.add_argument("--org", type=bool, default=True)
+    parser.add_argument("--dataset_file", type=str, default="../data/MRBench/MRBench_V1.json")
+
+    args = parser.parse_args()
+    args.output_file = os.path.join(os.path.dirname(args.dataset_file), args.model_name + "_result.json")
+
+    json_data = load_data(args)
+    BridgePrompt, MathDialPrompt = load_prompt(args)
+    inference(args, json_data, BridgePrompt, MathDialPrompt)
