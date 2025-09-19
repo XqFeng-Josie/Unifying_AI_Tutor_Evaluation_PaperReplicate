@@ -10,7 +10,7 @@ from prompt import prompt_Bridge, prompt_MathDial
 model_ids_map = {
     # "llama": "meta-llama/Llama-3.1-8B-Instruct",
     "llame": "/u/xfeng4/.cache/modelscope/hub/models/LLM-Research/Meta-Llama-3.1-8B-Instruct",
-    "mistral": "mistralai/Mistral-7B-Instruct-v0.1",
+    "mistral": "/u/xfeng4/.cache/modelscope/hub/models/mistralai/Mistral-7B-Instruct-v0.1",
 }
 def load_data(args):
     # Dataset and output file configuration

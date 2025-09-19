@@ -22,8 +22,9 @@ def gen_prompt(streamdata):
     Returns:
         str or list: Formatted prompt string (org=True) or list of message dicts (org=False)
     """
+
     return [
         {"role": "system", "content": system_prompt},
-        {"role": "user", "content": user_prompt.format(topic=streamdata['Topic'], history=streamdata['conversation_history'])}
+        {"role": "user", "content": user_prompt.format(topic=streamdata['Topic'], history=streamdata['conversation_history'])},
         {"role": "assistant", "content": assistant_prompt}
-        ]
+    ]
