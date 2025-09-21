@@ -1,17 +1,12 @@
 SYSTEM="""### System:
-You are a critic evaluating a tutor’s interaction with a student, responsible for providing a clear and objective single evaluation
-score based on specific criteria. Each assessment must accurately reflect the absolute performance standards.
-
+You are a critic evaluating a tutor’s interaction with a student, responsible for providing a clear and objective single evaluation score based on specific criteria. Each assessment must accurately reflect the absolute performance standards.
 
 ### User: 
-# Task Description: The assessment of the ###Tutor Response should be based on the following: ###Previous Conversation
-between Tutor and Student, ###Definitions of criteria and
+# Task Description: The assessment of the ###Tutor Response should be based on the following: ###Previous Conversation between Tutor and Student, ###Definitions of criteria and ###Scoring Rubric.
 
-# Scoring Rubric.
-(1). Write a one-sentence feedback that assesses the quality of the response and Rate the # Tutor Response strictly based on
-the given scoring rubric and criteria, not evaluating in general. 
+(1). Write a one-sentence feedback that assesses the quality of the response and Rate the # Tutor Response strictly based on the given scoring rubric and criteria, not evaluating in general. 
 (2). After writing feedback, write a score that is an integer between 1 and 3. You should refer to the scoring rubric.
-(3). The output format should look as follows: "Feedback: (write a feedback for criteria) [RESULT] (an integer number between 1and 3)"
+(3). The output format should look as follows: "Feedback: (write a feedback for criteria) [RESULT] (an integer number between 1 and 3)"
 (4). Please do not generate other opening, closing, or explanations.
 
 # Previous Conversation between Tutor and Student: {history}
@@ -24,6 +19,23 @@ the given scoring rubric and criteria, not evaluating in general.
 
 ### Assistant:
 # Generate Assessment Score: """
+system_prompt = """You are a critic evaluating a tutor’s interaction with a student, responsible for providing a clear and objective single evaluation score based on specific criteria. Each assessment must accurately reflect the absolute performance standards."""
+
+user_prompt = """# Task Description: The assessment of the ###Tutor Response should be based on the following: ###Previous Conversation between Tutor and Student, ###Definitions of criteria and ###Scoring Rubric.
+(1). Write a one-sentence feedback that assesses the quality of the response and Rate the # Tutor Response strictly based on the given scoring rubric and criteria, not evaluating in general. 
+(2). After writing feedback, write a score that is an integer between 1 and 3. You should refer to the scoring rubric.
+(3). The output format should look as follows: "Feedback: (write a feedback for criteria) [RESULT] (an integer number between 1 and 3)"
+(4). Please do not generate other opening, closing, or explanations.
+
+# Previous Conversation between Tutor and Student: {history}
+
+# Definitions of criteria: {definition}
+
+# Scoring Rubric: {rubric}
+
+# Tutor Response: {response}
+
+# Generate Assessment Score: """
 
 definition = {
     "mistake_identification": "Has the tutor identified a mistake in a student’s response?", 
@@ -33,7 +45,7 @@ definition = {
     "coherent": "Is the tutor’s response logically consistent with the student’s previous response?",
     "actionability": "Is it clear from the tutor’s feedback what the student should do next?",
     "tutor_tone": "Is the tutor’s response encouraging, neutral, or offensive?",
-    "humanness": "Does the tutor’s response sound natural, rather than robotic or artificial?"
+    "humanness": "Does the tutor’s response sound natural, rather than robotic or artificial?",
     }
 
 mistake_identification_rubric = """
@@ -52,7 +64,7 @@ Score 3: No
 
 revealing_answer_rubric = """
 [Does the tutor reveal the final answer (whether correct or not)]
-Score 1: Yes (and the revealed answer is correct
+Score 1: Yes (and the revealed answer is correct)
 Score 2: Yes (but the revealed answer is incorrect)
 Score 3: No
 """.strip()
@@ -91,3 +103,20 @@ Score 1: Yes
 Score 2: To some extent
 Score 3: No
 """.strip()
+
+rubric_mapping = {
+    "mistake_identification": mistake_identification_rubric,
+    "mistake_location": mistake_location_rubric,
+    "revealing_answer": revealing_answer_rubric,
+    "providing_guidance": providing_guidance_rubric,
+    "coherent": coherent_rubric,
+    "actionability": actionability_rubric,
+    "tutor_tone": tutor_tone_rubric,
+    "humanness": humanness_rubric
+}
+
+def gen_eval_prompt(data, rubric_name):
+    return [
+            {"role": "system", "content": system_prompt},
+            {"role": "user", "content": user_prompt.format(history=data['conversation_history'], definition=definition[rubric_name], rubric=rubric_mapping[rubric_name], response=data['result'])}]
+    
