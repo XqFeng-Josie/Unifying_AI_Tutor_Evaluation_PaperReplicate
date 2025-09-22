@@ -58,6 +58,7 @@ def inference(args, json_data):
         response = outputs[0]["generated_text"][-1]['content']
         result_data = {
             'conversation_id': cur_data['conversation_id'],
+            'Split': cur_data['Split'],
             'prompt': messages,
             'result': response
         }

@@ -94,6 +94,7 @@ def inference(args, json_data):
         feedback_and_result = extract_feedback_and_result(response)
         new_data = {
             "conversation_id": cur_data['conversation_id'],
+            "Split": cur_data['Split'],
             f'eval_{args.rubric_name}_result': {
                 "result": response,
                 "feedback": feedback_and_result['feedback'],
@@ -150,10 +151,10 @@ if __name__ == "__main__":
     print("*"*100)
     if args.mode == "generate":
         MRBench_V1_data = load_data("../data/MRBench/MRBench_V1.json")
-        conversation_history_map = {data['conversation_id']: data['conversation_history'] for data in MRBench_V1_data}
+        conversation_history_map = {data['conversation_id'] + data['Split']: data['conversation_history'] for data in MRBench_V1_data}
         json_data = load_data(args.dataset_file)
         for data in json_data:
-            data['conversation_history'] = conversation_history_map[data['conversation_id']]
+            data['conversation_history'] = conversation_history_map[data['conversation_id'] + data['Split']]
         rubric_name_list = ["mistake_identification", "mistake_location", "revealing_answer", "providing_guidance","coherent", "actionability", "tutor_tone", "humanness"]
         for rubric_name in rubric_name_list:
             print(f"*"*100)

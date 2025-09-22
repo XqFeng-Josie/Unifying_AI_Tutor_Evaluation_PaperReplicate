@@ -63,6 +63,7 @@ def inference(args, json_data):
             response = tokenizer.decode(generated_ids[0][input_ids.shape[-1]:], skip_special_tokens=True).strip()
             result_data = {
                 'conversation_id': cur_data['conversation_id'],
+                'Split': cur_data['Split'],
                 'prompt': messages,
                 'result': response
                 }
