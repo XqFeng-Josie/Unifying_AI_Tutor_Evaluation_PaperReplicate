@@ -43,9 +43,9 @@ def inference(args, json_data):
     for x in tqdm(range(len(json_data))):
         cur_data = json_data[x]
         if cur_data['Data'] == "MathDial":
-            messages = prompt_MathDial.gen_prompt(cur_data, args.combined)
+            messages = prompt_MathDial.gen_prompt(cur_data)
         elif cur_data['Data'] == "Bridge":
-            messages = prompt_Bridge.gen_prompt(cur_data, args.combined)
+            messages = prompt_Bridge.gen_prompt(cur_data)
         else:
             raise ValueError(f"Invalid data source: {cur_data['Data']}")
         encodeds = tokenizer.apply_chat_template(messages, return_tensors="pt", padding=True, add_generation_prompt=True)
