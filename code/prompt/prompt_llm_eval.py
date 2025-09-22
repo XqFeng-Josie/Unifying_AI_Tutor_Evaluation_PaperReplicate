@@ -1,5 +1,5 @@
 SYSTEM="""### System:
-You are a critic evaluating a tutor’s interaction with a student, responsible for providing a clear and objective single evaluation score based on specific criteria. Each assessment must accurately reflect the absolute performance standards.
+You are a critic evaluating a tutor's interaction with a student, responsible for providing a clear and objective single evaluation score based on specific criteria. Each assessment must accurately reflect the absolute performance standards.
 
 ### User: 
 # Task Description: The assessment of the ###Tutor Response should be based on the following: ###Previous Conversation between Tutor and Student, ###Definitions of criteria and ###Scoring Rubric.
@@ -63,7 +63,7 @@ Score 3: No
 """.strip()
 
 revealing_answer_rubric = """
-[Does the tutor reveal the final answer (whether correct or not)]
+[Does the tutor reveal the final answer (whether correct or not)?]
 Score 1: Yes (and the revealed answer is correct)
 Score 2: Yes (but the revealed answer is incorrect)
 Score 3: No
