@@ -92,16 +92,12 @@ def inference(args, json_data):
         # print("*"*100)
         response = outputs[0]["generated_text"][-1]['content']
         feedback_and_result = extract_feedback_and_result(response)
-        new_data = {
-            "conversation_id": cur_data['conversation_id'],
-            "Split": cur_data['Split'],
-            f'eval_{args.rubric_name}_result': {
-                "result": response,
-                "feedback": feedback_and_result['feedback'],
-                "number": feedback_and_result['number']
-            }
+        cur_data[f'eval_{args.rubric_name}_result'] = {
+            "result": response,
+            "feedback": feedback_and_result['feedback'],
+            "number": feedback_and_result['number']
         }
-        final_result.append(new_data)
+        final_result.append(cur_data)
     with open(args.output_file, "w", encoding="utf-8") as f:
         json.dump(final_result, f, ensure_ascii=False, indent=2)
     return final_result
