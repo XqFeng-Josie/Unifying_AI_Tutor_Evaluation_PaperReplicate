@@ -92,13 +92,24 @@ Performance comparison between original paper and our replication across 8 evalu
 
 #### Key Findings
 
-- **Overall Performance**: Our replication achieves comparable or better performance across most tasks and models
-- **Significant Improvements**: 
-  - Gemini shows the largest improvements across all dimensions (+17% to +27%)
-  - Expert human tutors show consistent improvements (+5% to +7%) except for Tutor_Tone
-- **Consistent Results**: Most models show small positive improvements, indicating successful replication
-- **Notable Discrepancy**: Expert Tutor_Tone shows a large negative difference (-75%), which may indicate different annotation criteria or data preprocessing
+Check Gemini/Expert results!!!
 
+### Table 3: Pedagogical Ability Assessment Results(W inference)
+
+Performance comparison between original paper and our replication across 8 evaluation dimensions:
+
+**Difference = Our Results - Paper Results**
+
+| Tutor | Mistake_Identification | Mistake_Location | Revealing_of_the_Answer | Providing_Guidance | Actionability | Coherence | Tutor_Tone | Human-likeness |
+|-------|:---------------------:|:----------------:|:----------------------:|:------------------:|:-------------:|:---------:|:----------:|:--------------:|
+| **Llama3.1-8B** | | | | | | | | |
+| Paper | 80.21 | 54.69 | 73.96 | 45.31 | 42.71 | 80.73 | 19.79 | 93.75 |
+| Our | 82.29 | 74.48 | 52.08 | 41.67 | 66.67 | 82.29 | 51.56 | 79.69 |
+| Diff | **+2.08** | **+19.79** | **-21.88** | **-3.64** | **+23.96** | **+1.56** | **+31.77** | **-14.06** |
+| **Mistral** | | | | | | | | |
+| Paper | 93.23 | 73.44 | 86.46 | 63.54 | 70.31 | 86.98 | 15.10 | 95.31 |
+| Our | 41.67 | 38.54 | 43.75 | 22.4 | 43.23 | 62.5 | 46.35 | 69.79 |
+| Diff | **-51.56** | **+-34.90** | **-42.71** | **-41.14** | **-27.08** | **-24.48** | **+31.25** | **-25.52** |
 
 ## TODO
 
