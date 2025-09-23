@@ -151,7 +151,7 @@ if __name__ == "__main__":
         json_data = load_data(args.dataset_file)
         for data in json_data:
             data['conversation_history'] = conversation_history_map[data['conversation_id'] + data['Split']]
-        rubric_name_list = ["mistake_identification", "mistake_location", "revealing_answer", "providing_guidance","coherent", "actionability", "tutor_tone", "humanness"]
+        rubric_name_list = ["mistake_identification", "mistake_location", "revealing_of_the_answer", "providing_guidance","coherence", "actionability", "tutor_tone", "humanlikeness"]
         for rubric_name in rubric_name_list:
             print(f"*"*100)
             print(f"Evaluating {rubric_name}...")
@@ -161,7 +161,7 @@ if __name__ == "__main__":
         print(f"Evaluation completed.")
     else:
         MRBench_V1_data = load_data(args.dataset_file)
-        rubric_name_list = ["mistake_identification", "mistake_location", "revealing_answer", "providing_guidance","coherent", "actionability", "tutor_tone", "humanness"]
+        rubric_name_list = ["mistake_identification", "mistake_location", "revealing_of_the_answer", "providing_guidance","coherence", "actionability", "tutor_tone", "humanlikeness"]
         for rubric_name in rubric_name_list:
             print(f"*"*100)
             print(f"Evaluating {rubric_name}...")
