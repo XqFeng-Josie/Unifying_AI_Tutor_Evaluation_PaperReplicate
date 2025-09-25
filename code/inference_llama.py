@@ -49,7 +49,9 @@ def inference(args, json_data):
         outputs = pipeline(
             messages,
             max_new_tokens=1024,
-            pad_token_id=pipeline.tokenizer.eos_token_id
+            pad_token_id=pipeline.tokenizer.eos_token_id,
+            # greedy_search
+            do_sample=False
         )
         # print(cur_data['Ground_Truth_Solution'])
         # print("*"*100)
